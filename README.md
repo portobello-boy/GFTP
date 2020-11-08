@@ -30,3 +30,4 @@ Most to-do items are listed in this repository's 'Issues' section, but some are 
 - Add command line arguments for host/port/user
 - Separate command functionality into independent functions
 - Add interpreter for non-SFTP specific commands such as running programs (check `os` libary, particularly `os.Run(...)`)
+- Add unit tests using Golang's built-in test suite
