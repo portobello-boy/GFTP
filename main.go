@@ -39,9 +39,9 @@ func main() {
 	log.Print("Welcome to GFTP - An FTP service written in Golang")
 
 	// Define variables needed
-	host     := "159.230.226.130"
-	port     := ":238"
-	user     := "danielmillson"
+	host     := ""
+	port     := ""
+	user     := ""
 	password, _ := getPassword()
 
 	// Create SSH Client Config
