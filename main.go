@@ -7,6 +7,8 @@ import (
 
 	"fmt"
 	"os"
+	"os/exec"
+	"io"
 	"bufio"
 	"time"
 	"strings"
@@ -22,16 +24,85 @@ func getPassword() (string, error) {
     return ask.HiddenAsk("Password: ")
 }
 
-func interpret(command string, client *sftp.Client) {
-	switch command {
-		case "exit":
-			break
+func interpret(input string, client *sftp.Client) {
+	splits := strings.Split(input, " ")
+
+	switch splits[0] {
 		case "pwd":
 			wd, _ := client.Getwd()
 			println(wd)
+			break
 		case "lpwd":
 			wd, _ := os.Getwd()
 			println(wd)
+			break
+		case "ls":
+			wd, _ := client.Getwd()
+			fileInfos, _ := client.ReadDir(wd)
+			for _, f := range fileInfos {
+				println(f.Name())
+			}
+			break
+		case "lls":
+			out, _ := exec.Command("ls").Output()
+			println(string(out[:]))
+			break
+		// case "cd" has issues with SSH session - only one command can be run per session
+		case "lcd":
+			err := os.Chdir(splits[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+		case "put":
+			// Create source and destination file pointers
+			dest, err := client.Create(splits[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer dest.Close()
+
+			src, err := os.Open(splits[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer src.Close()
+
+			// Copy into destination the data from source
+			bytes, err := io.Copy(dest, src)
+			if err != nil {
+				log.Fatal(err)
+			}
+			
+			log.Printf("%d bytes uploaded\n", bytes)
+			break
+		case "get":
+			// Create source and destination file pointers
+			dest, err := os.Create(splits[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer dest.Close()
+
+			src, err := client.Open(splits[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer src.Close()
+
+			// Copy into destination the data from source
+			bytes, err := io.Copy(dest, src)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Flush in-memory copy
+			err = dest.Sync()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("%d bytes downloaded\n", bytes)
+			break
+		
 	}
 }
 
@@ -55,6 +126,7 @@ func main() {
 	}
 
 	// Connect to SSH host
+	log.Print("Attempting to connect to: ", host + port, " as user ", user)
 	conn, err := ssh.Dial("tcp", host + port, conf)
 	if err != nil {
 		log.Print("Error connecting to SSH host!")
@@ -79,17 +151,16 @@ func main() {
 			continue
 		}
 
-		command := scanner.Text()
-		if strings.TrimSpace(command) == "" {
+		input := scanner.Text()
+		if strings.TrimSpace(input) == "" {
 			continue
 		}
 
-		// println(command)
-		interpret(command, client)
-
-		if command == "exit" {
+		if input == "exit" {
 			break
 		}
+
+		interpret(input, client)
 
 		fmt.Print("GFTP > ")
 	}
