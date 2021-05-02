@@ -1,5 +1,5 @@
 # GFTP
-A simple SFTP application written in Golang
+A simple SFTP application written in Golang. This tool was based on the content found here: [Golang SSH Client](https://networkbit.ch/golang-ssh-client/), [Golang SFTP Client](http://networkbit.ch/golang-sftp-client/)
 
 ## Installation
 Ensure you have downloaded and installed a Golang interpreter/compiler. 
